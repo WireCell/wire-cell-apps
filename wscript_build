@@ -1,0 +1,1 @@
+bld.smplpkg('WireCellApps', use='WireCellIface', app_use='DYNAMO', test_use='DYNAMO')
