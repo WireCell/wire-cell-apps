@@ -51,15 +51,14 @@ int main(int argc, char* argv[])
     }
     cerr << "Loaded config: " << configuration_dumps(config) << endl;
 
+    // plugins from config file and cmdline
     vector<string> plugins = get< vector<string> >(config, "app.plugins");
-
     if (opts.count("plugin")) {
 	auto plv = opts["plugin"].as< vector<string> >();
 	plugins.insert(plugins.end(),plv.begin(),plv.end());
     }
 
     PluginManager& pm = PluginManager::instance();
-
     for (auto plugin : plugins) {
 	string libname = "";
 	string::size_type colon = plugin.find(":");
@@ -90,8 +89,13 @@ int main(int argc, char* argv[])
 		cerr << "Failed lookup component " << compclass << ":" << compname << endl;
 		return 1;
 	    }
-	    Configuration cfg = branch(config, component);
+	    Configuration cfg = cfgobj->default_configuration();
+	    Configuration more = branch(config, component);
+	    update(cfg, more);
 	    cfgobj->configure(cfg);
+	    config[component] = cfg;
+	    //cerr << "Configure " << component << "\n---\n" << cfg << "\n---\n" << endl;
+
 	    //ptree thisconfig = prefix_config(component, cfg);
 	    //cerr << configuration_dumps(thisconfig,"json") << endl;
 	}
@@ -103,7 +107,8 @@ int main(int argc, char* argv[])
 	if (filename == "-") {
 	    filename = "/dev/stdout";
 	}
-	configuration_dump(filename, config, format);
+	cerr <<"Dumping configration:" << endl;
+	configuration_dump(filename, config);
     }
 
     return 0;
