@@ -19,46 +19,6 @@ namespace po = boost::program_options;
 using namespace boost::algorithm;
 using namespace boost::property_tree;
 
-template <typename T>
-std::vector<T> as_vector(ptree const& pt, ptree::key_type const& key)
-{
-    cerr << "as_vector("<<key<<")"<<endl;
-    std::vector<T> r;
-    auto children = pt.get_child(key);
-    for (auto item : children) {
-	T val = item.second.get_value<T>();
-        r.push_back(val);
-	cerr << key << " : " << val << endl;
-    }
-    return r;
-}
-
-Configuration prefix_config(const std::string& prefix, Configuration cfg)
-{
-    Configuration ret;
-    std::string withdot = prefix + ".";
-    for (auto child : cfg) {
-	std::string key = withdot+child.first;
-	ptree val = child.second;
-	cerr << key << endl;
-	ret.put_child(key, val);
-    }
-    return ret;
-}
-Configuration lookup_config(const Configuration& top, const std::string& path,
-			    Configuration defaults)
-{
-    Configuration params;
-    try {
-	params = top.get_child(path);
-    }
-    catch (ptree_bad_path) {
-	return defaults;
-    }
-    ConfigurationMerge merger(defaults);
-    merger(params);
-    return defaults;
-}
 
 int main(int argc, char* argv[])
 {
@@ -81,18 +41,17 @@ int main(int argc, char* argv[])
     }
 
     Configuration config;
-    ConfigurationMerge merger(config);
     if (opts.count("config")) {
 	auto filenames = opts["config"].as< vector<string> >();
 	for (auto filename : filenames) {
 	    cout << "Loading config: " << filename << endl;
 	    Configuration more = configuration_load(filename);
-	    merger(more);
+	    update(config, more);
 	}
     }
     cerr << "Loaded config: " << configuration_dumps(config) << endl;
 
-    vector<string> plugins = as_vector<string>(config, "app.plugins");
+    vector<string> plugins = get< vector<string> >(config, "app.plugins");
 
     if (opts.count("plugin")) {
 	auto plv = opts["plugin"].as< vector<string> >();
@@ -131,11 +90,10 @@ int main(int argc, char* argv[])
 		cerr << "Failed lookup component " << compclass << ":" << compname << endl;
 		return 1;
 	    }
-	    Configuration cfg = lookup_config(config, component,
-					      cfgobj->default_configuration());
+	    Configuration cfg = branch(config, component);
 	    cfgobj->configure(cfg);
-	    ptree thisconfig = prefix_config(component, cfg);
-	    cerr << configuration_dumps(thisconfig,"json") << endl;
+	    //ptree thisconfig = prefix_config(component, cfg);
+	    //cerr << configuration_dumps(thisconfig,"json") << endl;
 	}
     }
     
