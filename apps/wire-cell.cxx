@@ -1,4 +1,6 @@
-/** A general command line Wire Cell application. */
+/** A general command line Wire Cell application. 
+ *
+ */
 
 #include "WireCellUtil/Configuration.h"
 #include "WireCellUtil/PluginManager.h"
@@ -26,9 +28,10 @@ int main(int argc, char* argv[])
     desc.add_options()
 	("help", "wire-cell [options] [argments]")
 	("config,c", po::value< vector<string> >(),"set configuration file")
-	("plugin,p", po::value< vector<string> >(),"specify a plugin")
-	("component,C", po::value< vector<string> >(),"specify a component")
-	("dump-config", po::value< string >(),"dump configuration to file")
+	("plugin,p", po::value< vector<string> >(),"specify a plugin as name:lib")
+	//("component,C", po::value< vector<string> >(),"specify a component")
+	("default,d", po::value< vector<string> >(),"dump default configuration of given component class")
+	("default-output,D", po::value< string >(),"dump defaults to a file")
     ;    
 
     po::variables_map opts;
@@ -40,6 +43,7 @@ int main(int argc, char* argv[])
 	return 1;
     }
 
+    // load JSON into Configuration
     Configuration config;
     if (opts.count("config")) {
 	auto filenames = opts["config"].as< vector<string> >();
@@ -51,13 +55,13 @@ int main(int argc, char* argv[])
     }
     cerr << "Loaded config: " << configuration_dumps(config) << endl;
 
+
     // plugins from config file and cmdline
-    vector<string> plugins = get< vector<string> >(config, "app.plugins");
+    vector<string> plugins = get< vector<string> >(config, "wire-cell.plugins");
     if (opts.count("plugin")) {
 	auto plv = opts["plugin"].as< vector<string> >();
 	plugins.insert(plugins.end(),plv.begin(),plv.end());
     }
-
     PluginManager& pm = PluginManager::instance();
     for (auto plugin : plugins) {
 	string libname = "";
@@ -75,8 +79,11 @@ int main(int argc, char* argv[])
 	pm.add(plugin, libname);
     }
 
-    if (opts.count("component")) {
-	for (auto component : opts["component"].as<vector <string> >()) {
+
+    if (opts.count("default")) {
+	Configuration top;
+	int failed_component_lookup = 0;
+	for (auto component : opts["default"].as<vector <string> >()) {
 	    string compclass = component;
 	    string compname = "";
 	    string::size_type colon = component.find(":");
@@ -86,30 +93,26 @@ int main(int argc, char* argv[])
 	    }
 	    auto cfgobj = Factory::lookup<IConfigurable>(compclass,compname);
 	    if (!cfgobj) {
-		cerr << "Failed lookup component " << compclass << ":" << compname << endl;
-		return 1;
+		cerr << "Failed lookup component \"" << component << "\"\n";
+		++failed_component_lookup;
+		continue;
 	    }
 	    Configuration cfg = cfgobj->default_configuration();
-	    Configuration more = branch(config, component);
-	    update(cfg, more);
-	    cfgobj->configure(cfg);
-	    config[component] = cfg;
-	    //cerr << "Configure " << component << "\n---\n" << cfg << "\n---\n" << endl;
-
-	    //ptree thisconfig = prefix_config(component, cfg);
-	    //cerr << configuration_dumps(thisconfig,"json") << endl;
+	    Configuration inst;
+	    inst[compname] = cfg;
+	    top[compclass] = inst;
 	}
+	if (failed_component_lookup) { return 1; }
+
+	string filename = "/dev/stdout";
+	if (opts.count("default-output")) {
+	    filename = opts["default-output"].as<string>();
+	}
+	configuration_dump(filename, top);
     }
     
-    if (opts.count("dump-config")) {
-	auto filename = opts["dump-config"].as<string>();
-	string format = "";
-	if (filename == "-") {
-	    filename = "/dev/stdout";
-	}
-	cerr <<"Dumping configration:" << endl;
-	configuration_dump(filename, config);
-    }
+
+    /// now run something!
 
     return 0;
 }
