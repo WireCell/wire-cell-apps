@@ -26,11 +26,11 @@ int main(int argc, char* argv[])
 {
     po::options_description desc("Options");
     desc.add_options()
-	("help", "wire-cell [options] [argments]")
+	("help,h", "wire-cell [options] [argments]")
 	("config,c", po::value< vector<string> >(),"set configuration file")
 	("plugin,p", po::value< vector<string> >(),"specify a plugin as name:lib")
 	//("component,C", po::value< vector<string> >(),"specify a component")
-	("default,d", po::value< vector<string> >(),"dump default configuration of given component class")
+	("default,d", po::value< vector<string> >(),"dump default configuration of a component")
 	("default-output,D", po::value< string >(),"dump defaults to a file")
     ;    
 
@@ -70,13 +70,14 @@ int main(int argc, char* argv[])
 	    libname = plugin.substr(colon+1, plugin.size()-colon);
 	    plugin = plugin.substr(0,colon);
 	}
-	cout << "Loading plugin: " << plugin;
+
+	cerr << "Adding plugin: " << plugin;
 	if (libname.size()) {
-	    cout << " from library " << libname;
+	    cerr << " from library " << libname;
 	}
-	cout << endl;
-	
-	pm.add(plugin, libname);
+	cerr << endl;
+	auto ok = pm.add(plugin, libname);
+	if (!ok) return 1;
     }
 
 
@@ -91,13 +92,17 @@ int main(int argc, char* argv[])
 		compname = component.substr(colon+1, component.size()-colon);
 		compclass = component.substr(0,colon);
 	    }
-	    auto cfgobj = Factory::lookup<IConfigurable>(compclass,compname);
-	    if (!cfgobj) {
+
+	    Configuration cfg;
+	    try {
+		auto cfgobj = Factory::lookup<IConfigurable>(compclass,compname);
+		cfg = cfgobj->default_configuration();
+	    }
+	    catch (FactoryException& fe) {
 		cerr << "Failed lookup component \"" << component << "\"\n";
 		++failed_component_lookup;
 		continue;
 	    }
-	    Configuration cfg = cfgobj->default_configuration();
 	    Configuration inst;
 	    inst[compname] = cfg;
 	    top[compclass] = inst;
