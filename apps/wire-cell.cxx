@@ -2,10 +2,13 @@
  *
  */
 
-#include "WireCellUtil/Configuration.h"
+#include "WireCellUtil/ConfigManager.h"
 #include "WireCellUtil/PluginManager.h"
 #include "WireCellUtil/NamedFactory.h"
+#include "WireCellUtil/String.h"
+
 #include "WireCellIface/IConfigurable.h"
+#include "WireCellIface/IApplication.h"
 
 #include <boost/program_options.hpp>
 #include <boost/algorithm/string.hpp>
@@ -21,17 +24,17 @@ namespace po = boost::program_options;
 using namespace boost::algorithm;
 using namespace boost::property_tree;
 
-
 int main(int argc, char* argv[])
 {
     po::options_description desc("Options");
     desc.add_options()
-	("help,h", "wire-cell [options] [argments]")
-	("config,c", po::value< vector<string> >(),"set configuration file")
-	("plugin,p", po::value< vector<string> >(),"specify a plugin as name:lib")
+	("help,h", "wire-cell [options] [arguments]")
+	("app,a", po::value< vector<string> >(),"application component to invoke")
+	("config,c", po::value< vector<string> >(),"provide a configuration file")
+	("plugin,p", po::value< vector<string> >(),"specify a plugin as name[:lib]")
 	//("component,C", po::value< vector<string> >(),"specify a component")
-	("default,d", po::value< vector<string> >(),"dump default configuration of a component")
-	("default-output,D", po::value< string >(),"dump defaults to a file")
+	//("default,d", po::value< vector<string> >(),"dump default configuration of a component")
+	//("default-output,D", po::value< string >(),"dump defaults to a file")
     ;    
 
     po::variables_map opts;
@@ -44,80 +47,64 @@ int main(int argc, char* argv[])
     }
 
     // load JSON into Configuration
-    Configuration config;
+    ConfigManager cfgmgr;
     if (opts.count("config")) {
 	auto filenames = opts["config"].as< vector<string> >();
 	for (auto filename : filenames) {
 	    cout << "Loading config: " << filename << endl;
-	    Configuration more = configuration_load(filename);
-	    update(config, more);
+	    cfgmgr.load(filename);
 	}
     }
-    cerr << "Loaded config: " << configuration_dumps(config) << endl;
+    cerr << "Loaded config:\n" << cfgmgr.dumps() << endl;
 
 
     // plugins from config file and cmdline
-    vector<string> plugins = get< vector<string> >(config, "wire-cell.plugins");
+    //vector<string> plugins = get< vector<string> >(config, "wire-cell.plugins");
+    vector<string> plugins;
     if (opts.count("plugin")) {
 	auto plv = opts["plugin"].as< vector<string> >();
 	plugins.insert(plugins.end(),plv.begin(),plv.end());
     }
     PluginManager& pm = PluginManager::instance();
     for (auto plugin : plugins) {
-	string libname = "";
-	string::size_type colon = plugin.find(":");
-	if (colon != string::npos) {
-	    libname = plugin.substr(colon+1, plugin.size()-colon);
-	    plugin = plugin.substr(0,colon);
-	}
-
+	string pname, lname;
+	std::tie(pname, lname) = parse_pair(plugin);
 	cerr << "Adding plugin: " << plugin;
-	if (libname.size()) {
-	    cerr << " from library " << libname;
+	if (lname.size()) {
+	    cerr << " from library " << lname;
 	}
 	cerr << endl;
-	auto ok = pm.add(plugin, libname);
+	auto ok = pm.add(pname, lname);
 	if (!ok) return 1;
     }
 
+    // apply configuration to all configurables
+    for (auto c : cfgmgr.all()) {
+	string type = get<string>(c, "type");
+	string name = get<string>(c, "name");
 
-    if (opts.count("default")) {
-	Configuration top;
-	int failed_component_lookup = 0;
-	for (auto component : opts["default"].as<vector <string> >()) {
-	    string compclass = component;
-	    string compname = "";
-	    string::size_type colon = component.find(":");
-	    if (colon != string::npos) {
-		compname = component.substr(colon+1, component.size()-colon);
-		compclass = component.substr(0,colon);
-	    }
+	auto cfgobj = Factory::lookup<IConfigurable>(type, name); // throws 
+	
+	Configuration cfg = cfgobj->default_configuration();
+	cfg = update(cfg, c["data"]);
 
-	    Configuration cfg;
-	    try {
-		auto cfgobj = Factory::lookup<IConfigurable>(compclass,compname);
-		cfg = cfgobj->default_configuration();
-	    }
-	    catch (FactoryException& fe) {
-		cerr << "Failed lookup component \"" << component << "\"\n";
-		++failed_component_lookup;
-		continue;
-	    }
-	    Configuration inst;
-	    inst[compname] = cfg;
-	    top[compclass] = inst;
-	}
-	if (failed_component_lookup) { return 1; }
-
-	string filename = "/dev/stdout";
-	if (opts.count("default-output")) {
-	    filename = opts["default-output"].as<string>();
-	}
-	configuration_dump(filename, top);
+	cfgobj->configure(cfg);
     }
+
+    // run any apps
+    if (opts.count("app")) {
+	vector<IApplication::pointer> apps;
+	for (auto component : opts["app"].as<vector <string> >()) {
+	    string type, name;
+	    std::tie(type,name) = parse_pair(component);
+	    auto a = Factory::lookup<IApplication>(type,name);
+	    apps.push_back(a);
+	}
+	for (auto a : apps) {
+	    a->execute();
+	}
+    }
+
     
-
-    /// now run something!
-
     return 0;
 }
