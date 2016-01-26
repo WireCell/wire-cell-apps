@@ -43,7 +43,7 @@ void ConfigDumper::execute()
     for (auto c : m_cfg["components"]) {
 
 	string type, name;
-	parse_pair(convert<string>(c));
+	tie(type,name) = parse_pair(convert<string>(c));
 
 	Configuration cfg;
 	try {
@@ -51,7 +51,7 @@ void ConfigDumper::execute()
 	    cfg = cfgobj->default_configuration();
 	}
 	catch (FactoryException& fe) {
-	    cerr << "Failed lookup component: \"" << type << "\":\""<<name<<"\"\n";
+	    cerr << "ConfigDumper: Failed lookup component: \"" << type << "\":\""<<name<<"\"\n";
 	    ++nfailed;
 	    continue;
 	}
