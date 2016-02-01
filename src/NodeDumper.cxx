@@ -32,8 +32,10 @@ WireCell::Configuration NodeDumper::default_configuration() const
     // yo dawg, I heard you liked dumping so I made a dumper that dumps the dumper.
     std::string json = R"({
 "filename":"/dev/stdout",
-"nodes":["WireSource","BoundCells"]
+"nodes":["WireSource","BoundCells","Diffuser","Digitizer","Drifter","Framer","PlaneDuctor","PlaneSliceMerger",
+         "Tiling","TrackDepos","WireGenerator","WireSummarizer","ChannelCellSelector","CellSliceSink"]
 })";
+
     return configuration_loads(json, "json");
 }
 
@@ -42,9 +44,24 @@ void NodeDumper::execute()
 {
     Configuration all;
 
-    for (auto type_cfg : m_cfg["nodes"]) {
+    int nnodes = m_cfg["nodes"].size();
+    std::vector<std::string> types;
+    if (0 == nnodes) {
+	types = Factory::known_classes<INode>();
+	nnodes = types.size();
+	cerr << "Dumping all known node classes ("<<nnodes<<")\n";
+    }
+    else {
+	cerr << "Dumping: ("<<nnodes<<")\n";
+	for (auto type_cfg : m_cfg["nodes"]) {
+	    std::string type = convert<string>(type_cfg);
+	    types.push_back(type);
+	    cerr << "\t" << type << endl;
+	}
+    }
 
-	auto type = convert<string>(type_cfg);
+
+    for (auto type : types) {
 
 	INode::pointer node;
 	try {
