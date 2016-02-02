@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
 	    cfgmgr.load(filename);
 	}
     }
-    cerr << "Loaded config:\n" << cfgmgr.dumps() << endl;
+    //cerr << "Loaded config:\n" << cfgmgr.dumps() << endl;
 
 
     // plugins from config file and cmdline
@@ -100,7 +100,9 @@ int main(int argc, char* argv[])
 	    auto a = Factory::lookup<IApplication>(type,name);
 	    apps.push_back(a);
 	}
+	cerr << "Executing " << apps.size() << " apps:\n";
 	for (auto a : apps) {
+	    cerr << "Executing app\n";
 	    a->execute();
 	}
     }
