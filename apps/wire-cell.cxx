@@ -42,7 +42,7 @@ int main(int argc, char* argv[])
     po::notify(opts);    
 
     if (opts.count("help")) {
-	cout << desc << "\n";
+	cerr << desc << "\n";
 	return 1;
     }
 
@@ -50,9 +50,11 @@ int main(int argc, char* argv[])
     ConfigManager cfgmgr;
     if (opts.count("config")) {
 	auto filenames = opts["config"].as< vector<string> >();
+	cerr << "Have " << filenames.size() <<  " configuration files\n";
 	for (auto filename : filenames) {
-	    cout << "Loading config: " << filename << endl;
+	    cerr << "Loading config: " << filename << "...\n";
 	    cfgmgr.load(filename);
+	    cerr << "...done\n";
 	}
     }
     //cerr << "Loaded config:\n" << cfgmgr.dumps() << endl;
