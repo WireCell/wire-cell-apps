@@ -6,6 +6,7 @@
 #include "WireCellUtil/PluginManager.h"
 #include "WireCellUtil/NamedFactory.h"
 #include "WireCellUtil/String.h"
+#include "WireCellUtil/Point.h"
 
 #include "WireCellIface/IConfigurable.h"
 #include "WireCellIface/IApplication.h"
@@ -59,10 +60,17 @@ int main(int argc, char* argv[])
     }
     //cerr << "Loaded config:\n" << cfgmgr.dumps() << endl;
 
-
     // plugins from config file and cmdline
-    //vector<string> plugins = get< vector<string> >(config, "wire-cell.plugins");
     vector<string> plugins;
+
+    int ind = cfgmgr.index("wire-cell");
+    Configuration main_cfg = cfgmgr.pop(ind);
+    if (! main_cfg.isNull()) {
+	plugins = get< vector<string> >(main_cfg, "data.plugins");
+	cerr << "Got these plugins from config:\n";
+	for (auto one: plugins) { cerr << "\t" << one << endl; }
+    }
+
     if (opts.count("plugin")) {
 	auto plv = opts["plugin"].as< vector<string> >();
 	plugins.insert(plugins.end(),plv.begin(),plv.end());
@@ -86,10 +94,8 @@ int main(int argc, char* argv[])
 	string name = get<string>(c, "name");
 
 	auto cfgobj = Factory::lookup<IConfigurable>(type, name); // throws 
-	
 	Configuration cfg = cfgobj->default_configuration();
 	cfg = update(cfg, c["data"]);
-
 	cfgobj->configure(cfg);
     }
 
