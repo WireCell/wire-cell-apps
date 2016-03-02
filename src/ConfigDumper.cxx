@@ -35,7 +35,6 @@ WireCell::Configuration ConfigDumper::default_configuration() const
     return configuration_loads(json, "json");
 }
 
-
 void ConfigDumper::execute()
 {
     ConfigManager cm;
@@ -60,7 +59,4 @@ void ConfigDumper::execute()
 
     cm.dump(get<string>(m_cfg, "filename"));
 }
-
-
-
 

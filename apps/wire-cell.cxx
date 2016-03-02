@@ -60,21 +60,25 @@ int main(int argc, char* argv[])
     }
     //cerr << "Loaded config:\n" << cfgmgr.dumps() << endl;
 
-    // plugins from config file and cmdline
-    vector<string> plugins;
-
     int ind = cfgmgr.index("wire-cell");
     Configuration main_cfg = cfgmgr.pop(ind);
+
+    // plugins and apps from config file and cmdline
+    vector<string> plugins, apps;
     if (! main_cfg.isNull()) {
 	plugins = get< vector<string> >(main_cfg, "data.plugins");
-	cerr << "Got these plugins from config:\n";
-	for (auto one: plugins) { cerr << "\t" << one << endl; }
+	apps = get< vector<string> >(main_cfg, "data.apps");
     }
-
     if (opts.count("plugin")) {
 	auto plv = opts["plugin"].as< vector<string> >();
 	plugins.insert(plugins.end(),plv.begin(),plv.end());
     }
+    if (opts.count("app")) {
+	auto av = opts["app"].as< vector<string> >();
+	apps.insert(apps.end(),av.begin(),av.end());
+    }
+
+    
     PluginManager& pm = PluginManager::instance();
     for (auto plugin : plugins) {
 	string pname, lname;
@@ -99,20 +103,20 @@ int main(int argc, char* argv[])
 	cfgobj->configure(cfg);
     }
 
+
     // run any apps
-    if (opts.count("app")) {
-	vector<IApplication::pointer> apps;
-	for (auto component : opts["app"].as<vector <string> >()) {
-	    string type, name;
+    vector<IApplication::pointer> app_objs;
+    for (auto component : apps) {
+	string type, name;
 	    std::tie(type,name) = parse_pair(component);
 	    auto a = Factory::lookup<IApplication>(type,name);
-	    apps.push_back(a);
-	}
-	cerr << "Executing " << apps.size() << " apps:\n";
-	for (auto a : apps) {
-	    cerr << "Executing app\n";
-	    a->execute();
-	}
+	    app_objs.push_back(a);
+    }
+    cerr << "Executing " << apps.size() << " apps:\n";
+    for (int ind=0; ind<apps.size(); ++ind) {
+	auto aobj = app_objs[ind];
+	cerr << "Executing app: " << apps[ind] << endl;
+	aobj->execute();
     }
 
     
