@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
 	auto filenames = opts["config"].as< vector<string> >();
 	cerr << "Have " << filenames.size() <<  " configuration files\n";
 	for (auto filename : filenames) {
-	    cerr << "Loading config: " << filename << "...\n";
+	    cerr << "Loading config: " << filename << " ...\n";
 	    cfgmgr.load(filename);
 	    cerr << "...done\n";
 	}
@@ -100,6 +100,7 @@ int main(int argc, char* argv[])
 	auto cfgobj = Factory::lookup<IConfigurable>(type, name); // throws 
 	Configuration cfg = cfgobj->default_configuration();
 	cfg = update(cfg, c["data"]);
+	cerr << "Configure: " << type << " " << name << endl;
 	cfgobj->configure(cfg);
     }
 
