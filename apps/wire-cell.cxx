@@ -33,9 +33,11 @@ int main(int argc, char* argv[])
 	("app,a", po::value< vector<string> >(),"application component to invoke")
 	("config,c", po::value< vector<string> >(),"provide a configuration file")
 	("plugin,p", po::value< vector<string> >(),"specify a plugin as name[:lib]")
+
 	//("component,C", po::value< vector<string> >(),"specify a component")
-	//("default,d", po::value< vector<string> >(),"dump default configuration of a component")
-	//("default-output,D", po::value< string >(),"dump defaults to a file")
+	("dump,D", po::value< vector<string> >(),"dump the default configuration of a given component")
+        ("dump-file", po::value<string>()->default_value("/dev/stderr"), "dump to this file")
+
     ;    
 
     po::variables_map opts;
@@ -79,6 +81,7 @@ int main(int argc, char* argv[])
     }
 
     
+    // Load any plugin shared libraries requested by user.
     PluginManager& pm = PluginManager::instance();
     for (auto plugin : plugins) {
 	string pname, lname;
@@ -92,26 +95,38 @@ int main(int argc, char* argv[])
 	if (!ok) return 1;
     }
 
-    // apply configuration to all configurables
+
+    // Apply any user configuration.
     for (auto c : cfgmgr.all()) {
 	string type = get<string>(c, "type");
 	string name = get<string>(c, "name");
-
 	auto cfgobj = Factory::lookup<IConfigurable>(type, name); // throws 
 	Configuration cfg = cfgobj->default_configuration();
+        cerr << "Configuring: " << type << ":" << name << endl;
 	cfg = update(cfg, c["data"]);
-	cerr << "Configure: " << type << " " << name << endl;
 	cfgobj->configure(cfg);
     }
 
+
+    // As side effect, dump default configuration of given configurables.
+    if (opts.count("dump")) {
+        ConfigManager defcm;
+        auto todump = opts["dump"].as< vector<string> >();
+        for (auto type : todump) {
+            auto obj = Factory::lookup<IConfigurable>(type);
+            Configuration cfg = obj->default_configuration();
+            defcm.add(cfg, type);
+        }
+        defcm.dump(opts["dump-file"].as<string>());
+    }
 
     // run any apps
     vector<IApplication::pointer> app_objs;
     for (auto component : apps) {
 	string type, name;
-	    std::tie(type,name) = parse_pair(component);
-	    auto a = Factory::lookup<IApplication>(type,name);
-	    app_objs.push_back(a);
+        std::tie(type,name) = parse_pair(component);
+        auto a = Factory::lookup<IApplication>(type,name);
+        app_objs.push_back(a);
     }
     cerr << "Executing " << apps.size() << " apps:\n";
     for (int ind=0; ind<apps.size(); ++ind) {
