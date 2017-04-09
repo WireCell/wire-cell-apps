@@ -5,6 +5,7 @@
 #include "WireCellUtil/ConfigManager.h"
 #include "WireCellUtil/PluginManager.h"
 #include "WireCellUtil/NamedFactory.h"
+#include "WireCellUtil/Persist.h"
 #include "WireCellUtil/String.h"
 #include "WireCellUtil/Point.h"
 
@@ -56,7 +57,8 @@ int main(int argc, char* argv[])
 	cerr << "Have " << filenames.size() <<  " configuration files\n";
 	for (auto filename : filenames) {
 	    cerr << "Loading config: " << filename << " ...\n";
-	    cfgmgr.load(filename);
+            auto one = Persist::load(filename);
+	    cfgmgr.extend(one);
 	    cerr << "...done\n";
 	}
     }
@@ -117,7 +119,7 @@ int main(int argc, char* argv[])
             Configuration cfg = obj->default_configuration();
             defcm.add(cfg, type);
         }
-        defcm.dump(opts["dump-file"].as<string>());
+        Persist::dump(opts["dump-file"].as<string>(), defcm.all());
     }
 
     // run any apps

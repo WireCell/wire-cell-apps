@@ -3,6 +3,7 @@
 #include "WireCellUtil/Type.h"
 #include "WireCellUtil/NamedFactory.h"
 #include "WireCellUtil/Configuration.h"
+#include "WireCellUtil/Persist.h"
 #include "WireCellIface/INode.h"
 
 WIRECELL_FACTORY(NodeDumper, WireCellApps::NodeDumper, WireCell::IApplication, WireCell::IConfigurable);
@@ -36,7 +37,7 @@ WireCell::Configuration NodeDumper::default_configuration() const
          "Tiling","TrackDepos","WireGenerator","WireSummarizer","ChannelCellSelector","CellSliceSink"]
 })";
 
-    return configuration_loads(json, "json");
+    return Persist::loads(json);
 }
 
 
@@ -86,7 +87,7 @@ void NodeDumper::execute()
 	all.append(one);
     }
 
-    configuration_dump(get<string>(m_cfg, "filename"), all);
+    Persist::dump(get<string>(m_cfg, "filename"), all);
 }
 
 

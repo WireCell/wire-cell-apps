@@ -1,5 +1,6 @@
 #include "WireCellApps/ConfigDumper.h"
 #include "WireCellUtil/String.h"
+#include "WireCellUtil/Persist.h"
 #include "WireCellUtil/NamedFactory.h"
 #include "WireCellUtil/ConfigManager.h"
 
@@ -28,11 +29,10 @@ void ConfigDumper::configure(const Configuration& config)
 WireCell::Configuration ConfigDumper::default_configuration() const
 {
     // yo dawg, I heard you liked dumping so I made a dumper that dumps the dumper.
-    std::string json = R"({
-"filename":"/dev/stdout",
-"components":["ConfigDumper"]
-})";
-    return configuration_loads(json, "json");
+    Configuration cfg;
+    cfg["filename"] = "/dev/stdout";
+    cfg["components"][0] = "ConfigDumper";
+    return cfg;
 }
 
 void ConfigDumper::execute()
@@ -57,6 +57,6 @@ void ConfigDumper::execute()
 	cm.add(cfg, type, name);
     }
 
-    cm.dump(get<string>(m_cfg, "filename"));
+    Persist::dump(get<string>(m_cfg, "filename"), cm.all());
 }
 
