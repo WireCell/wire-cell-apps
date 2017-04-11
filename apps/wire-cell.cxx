@@ -87,7 +87,7 @@ int main(int argc, char* argv[])
     PluginManager& pm = PluginManager::instance();
     for (auto plugin : plugins) {
 	string pname, lname;
-	std::tie(pname, lname) = parse_pair(plugin);
+	std::tie(pname, lname) = String::parse_pair(plugin);
 	cerr << "Adding plugin: " << plugin;
 	if (lname.size()) {
 	    cerr << " from library " << lname;
@@ -126,7 +126,7 @@ int main(int argc, char* argv[])
     vector<IApplication::pointer> app_objs;
     for (auto component : apps) {
 	string type, name;
-        std::tie(type,name) = parse_pair(component);
+        std::tie(type,name) = String::parse_pair(component);
         auto a = Factory::lookup<IApplication>(type,name);
         app_objs.push_back(a);
     }

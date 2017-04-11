@@ -42,7 +42,7 @@ void ConfigDumper::execute()
     for (auto c : m_cfg["components"]) {
 
 	string type, name;
-	tie(type,name) = parse_pair(convert<string>(c));
+	tie(type,name) = String::parse_pair(convert<string>(c));
 
 	Configuration cfg;
 	try {
