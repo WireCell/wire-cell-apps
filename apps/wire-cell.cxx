@@ -35,8 +35,8 @@ int main(int argc, char* argv[])
 	("config,c", po::value< vector<string> >(),"provide a configuration file")
 	("plugin,p", po::value< vector<string> >(),"specify a plugin as name[:lib]")
 
-	//("component,C", po::value< vector<string> >(),"specify a component")
-	("dump,D", po::value< vector<string> >(),"dump the default configuration of a given component")
+	("output-config,C", po::value<string>(),"output as-configured info to given file")
+	("dump-default,D", po::value< vector<string> >(),"dump the default configuration of a given component")
         ("dump-file", po::value<string>()->default_value("/dev/stderr"), "dump to this file")
 
     ;    
@@ -104,22 +104,31 @@ int main(int argc, char* argv[])
 	string name = get<string>(c, "name");
 	auto cfgobj = Factory::lookup<IConfigurable>(type, name); // throws 
 	Configuration cfg = cfgobj->default_configuration();
-        cerr << "Configuring: " << type << ":" << name << endl;
+        cerr << "Configuring: \"" << type << ":" << name << "\"\n";
 	cfg = update(cfg, c["data"]);
 	cfgobj->configure(cfg);
     }
 
 
     // As side effect, dump default configuration of given configurables.
-    if (opts.count("dump")) {
+    if (opts.count("dump-default")) {
         ConfigManager defcm;
-        auto todump = opts["dump"].as< vector<string> >();
+        auto todump = opts["dump-default"].as< vector<string> >();
         for (auto type : todump) {
             auto obj = Factory::lookup<IConfigurable>(type);
             Configuration cfg = obj->default_configuration();
             defcm.add(cfg, type);
         }
-        Persist::dump(opts["dump-file"].as<string>(), defcm.all());
+        std::string dump_file = opts["dump-file"].as<string>();
+        cerr << "Dumping to: " << dump_file << endl;
+        Persist::dump(dump_file, defcm.all(), true);
+    }
+
+    // As a side effect, dump actual configuration
+    if (opts.count("output-config")) {
+        std::string fname = opts["output-config"].as<string>();
+        cerr << "Outputing config to: " << fname << endl;
+        Persist::dump(fname, cfgmgr.all(), true);
     }
 
     // run any apps
