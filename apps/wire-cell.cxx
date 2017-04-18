@@ -100,11 +100,17 @@ int main(int argc, char* argv[])
 
     // Apply any user configuration.
     for (auto c : cfgmgr.all()) {
+        if (c["type"].isNull()) {
+            cerr << "All configuration must have a type attribute, got:\n"
+                 << c << endl;
+            return 1;
+        }
+
 	string type = get<string>(c, "type");
 	string name = get<string>(c, "name");
+        cerr << "Configuring: \"" << type << ":" << name << "\"\n";
 	auto cfgobj = Factory::lookup<IConfigurable>(type, name); // throws 
 	Configuration cfg = cfgobj->default_configuration();
-        cerr << "Configuring: \"" << type << ":" << name << "\"\n";
 	cfg = update(cfg, c["data"]);
 	cfgobj->configure(cfg);
     }
