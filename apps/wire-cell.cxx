@@ -149,7 +149,7 @@ int main(int argc, char* argv[])
         app_objs.push_back(a);
     }
     cerr << "Executing " << apps.size() << " apps:\n";
-    for (int ind=0; ind<apps.size(); ++ind) {
+    for (size_t ind=0; ind<apps.size(); ++ind) {
 	auto aobj = app_objs[ind];
 	cerr << "Executing app: " << apps[ind] << endl;
 	aobj->execute();
