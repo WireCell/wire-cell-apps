@@ -100,6 +100,9 @@ int main(int argc, char* argv[])
 
     // Apply any user configuration.
     for (auto c : cfgmgr.all()) {
+        if (c.isNull()) {
+            continue;           // allow and ignore any totally empty configurations
+        }
         if (c["type"].isNull()) {
             cerr << "All configuration must have a type attribute, got:\n"
                  << c << endl;
