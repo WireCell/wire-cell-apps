@@ -34,7 +34,9 @@ int main(int argc, char* argv[])
 	("app,a", po::value< vector<string> >(),"application component to invoke")
 	("config,c", po::value< vector<string> >(),"provide a configuration file")
 	("plugin,p", po::value< vector<string> >(),"specify a plugin as name[:lib]")
-
+//	("jsonpath,j", po::value< vector<string> >(),"specify a JSON path=value")
+	("ext-str,V", po::value< vector<string> >(),"specify a Jsonnet external variable=value")
+	("jpath,J", po::value< vector<string> >(),"add to JSON/Jsonnet search path")
 	("output-config,C", po::value<string>(),"output as-configured info to given file")
 	("dump-default,D", po::value< vector<string> >(),"dump the default configuration of a given component")
         ("dump-file", po::value<string>()->default_value("/dev/stderr"), "dump to this file")
@@ -50,6 +52,19 @@ int main(int argc, char* argv[])
 	return 1;
     }
 
+    // Get any external variables
+    Persist::externalvars_t jsonnet_vars, jsonpath_vars;
+    if (opts.count("ext-str")) {
+        for (auto vev : opts["ext-str"].as< vector<string> >()) {
+            auto vv = String::split(vev, "=");
+            jsonnet_vars[vv[0]] = vv[1];
+        }
+    }
+    // fixme: these aren't yet supported.
+    // if (opts.count("jsonpath")) { 
+    //     jsonpath_vars = opts["jsonpath"].as< vector<string> >();
+    // }
+
     // load JSON into Configuration
     ConfigManager cfgmgr;
     if (opts.count("config")) {
@@ -57,7 +72,15 @@ int main(int argc, char* argv[])
 	cerr << "Have " << filenames.size() <<  " configuration files\n";
 	for (auto filename : filenames) {
 	    cerr << "Loading config: " << filename << " ...\n";
-            auto one = Persist::load(filename);
+            Json::Value one;
+            try {
+                one = Persist::load(filename, jsonnet_vars);
+            }
+            catch (Exception& e) {
+                cerr << "Failed to load " << filename << endl;
+                cerr << errstr(e) << endl;
+                return 1;
+            }
 	    cfgmgr.extend(one);
 	    cerr << "...done\n";
 	}
@@ -111,11 +134,18 @@ int main(int argc, char* argv[])
 
 	string type = get<string>(c, "type");
 	string name = get<string>(c, "name");
-        cerr << "Configuring: \"" << type << ":" << name << "\"\n";
+        cerr << "Configuring component: \"" << type << ":" << name << "\"\n";
 	auto cfgobj = Factory::lookup<IConfigurable>(type, name); // throws 
 	Configuration cfg = cfgobj->default_configuration();
 	cfg = update(cfg, c["data"]);
-	cfgobj->configure(cfg);
+        try {
+            cfgobj->configure(cfg);
+        }
+        catch (Exception& e) {
+            cerr << "Failed to configure component \"" << type << ":" << name << "\"\n";
+            cerr << errstr(e) << endl;
+            return 1;
+        }
     }
 
 
