@@ -139,9 +139,11 @@ void Main::initialize()
     Configuration main_cfg = m_cfgmgr.pop(ind);
     if (! main_cfg.isNull()) {
         for (auto plugin : get< vector<string> >(main_cfg, "data.plugins")) {
+            cerr << "Config requests plugin: \"" << plugin << "\"\n";
             m_plugins.push_back(plugin);
         }
         for (auto app : get< vector<string> >(main_cfg, "data.apps")) {
+            cerr << "Config requests app: \"" << app << "\"\n";
             m_apps.push_back(app);
         }
     }
