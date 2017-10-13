@@ -209,10 +209,10 @@ void Main::operator()()
         auto a = Factory::find<IApplication>(type,name); // throws
         app_objs.push_back(a);
     }
-    cerr << "Executing " << m_apps.size() << " apps:\n";
+    //cerr << "Executing " << m_apps.size() << " apps:\n";
     for (size_t ind=0; ind < m_apps.size(); ++ind) {
 	auto aobj = app_objs[ind];
-	cerr << "Executing app: " << m_apps[ind] << endl;
+	//cerr << "Executing app: " << m_apps[ind] << endl;
 	aobj->execute();        // throws
     }
 }
