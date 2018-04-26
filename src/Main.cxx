@@ -126,7 +126,7 @@ void Main::add_path(const std::string& dirname)
 void Main::initialize()
 {
     for (auto filename : m_cfgfiles) {
-        cerr << "Loading config: " << filename << " ...\n";
+        cerr << "WCT: loading config: " << filename << " ...\n";
         Json::Value one;
         one = Persist::load(filename, m_extvars); // throws
         m_cfgmgr.extend(one);
@@ -139,11 +139,11 @@ void Main::initialize()
     Configuration main_cfg = m_cfgmgr.pop(ind);
     if (! main_cfg.isNull()) {
         for (auto plugin : get< vector<string> >(main_cfg, "data.plugins")) {
-            cerr << "Config requests plugin: \"" << plugin << "\"\n";
+            cerr << "WCT: config requests plugin: \"" << plugin << "\"\n";
             m_plugins.push_back(plugin);
         }
         for (auto app : get< vector<string> >(main_cfg, "data.apps")) {
-            cerr << "Config requests app: \"" << app << "\"\n";
+            cerr << "WCT: config requests app: \"" << app << "\"\n";
             m_apps.push_back(app);
         }
     }
@@ -154,7 +154,7 @@ void Main::initialize()
     for (auto plugin : m_plugins) {
 	string pname, lname;
 	std::tie(pname, lname) = String::parse_pair(plugin);
-	cerr << "Adding plugin: " << plugin;
+	cerr << "WCT: adding plugin: " << plugin;
 	if (lname.size()) {
 	    cerr << " from library " << lname;
 	}
@@ -179,7 +179,7 @@ void Main::initialize()
         }
 	string type = get<string>(c, "type");
 	string name = get<string>(c, "name");
-        cerr << "Construct component: \"" << type << ":" << name << "\"\n";
+        cerr << "WCT: constructing component: \"" << type << ":" << name << "\"\n";
 	auto cfgobj = Factory::lookup<IConfigurable>(type, name); // throws 
     }
     for (auto c : m_cfgmgr.all()) {
@@ -188,7 +188,7 @@ void Main::initialize()
         }
 	string type = get<string>(c, "type");
 	string name = get<string>(c, "name");
-        cerr << "Configuring component: \"" << type << ":" << name << "\"\n";
+        cerr << "WCT: configuring component: \"" << type << ":" << name << "\"\n";
 	auto cfgobj = Factory::find<IConfigurable>(type, name); // throws 
 
         // Get component's hard-coded default config, update it with
@@ -209,10 +209,10 @@ void Main::operator()()
         auto a = Factory::find<IApplication>(type,name); // throws
         app_objs.push_back(a);
     }
-    cerr << "Executing " << m_apps.size() << " apps:\n";
+    cerr << "WCT: executing " << m_apps.size() << " apps:\n";
     for (size_t ind=0; ind < m_apps.size(); ++ind) {
 	auto aobj = app_objs[ind];
-	cerr << "Executing app: " << m_apps[ind] << endl;
+	cerr << "WCT: executing app: " << m_apps[ind] << endl;
 	aobj->execute();        // throws
     }
 }
