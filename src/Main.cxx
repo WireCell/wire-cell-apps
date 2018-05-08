@@ -180,7 +180,7 @@ void Main::initialize()
 	string type = get<string>(c, "type");
 	string name = get<string>(c, "name");
         cerr << "WCT: constructing component: \"" << type << ":" << name << "\"\n";
-	auto cfgobj = Factory::lookup<IConfigurable>(type, name); // throws 
+	auto iface = Factory::lookup<Interface>(type, name); // throws 
     }
     for (auto c : m_cfgmgr.all()) {
         if (c.isNull()) {
@@ -189,7 +189,10 @@ void Main::initialize()
 	string type = get<string>(c, "type");
 	string name = get<string>(c, "name");
         cerr << "WCT: configuring component: \"" << type << ":" << name << "\"\n";
-	auto cfgobj = Factory::find<IConfigurable>(type, name); // throws 
+	auto cfgobj = Factory::find_maybe<IConfigurable>(type, name); // doesn't throw. 
+        if (!cfgobj) {
+            continue;
+        }
 
         // Get component's hard-coded default config, update it with
         // anything the user may have provided and apply it.
