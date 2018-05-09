@@ -46,9 +46,15 @@ namespace WireCell {
         /// configuration sequence.
         void add_config(const std::string& filename);
 
-        /// Add an external variable so that it may be referenced in
-        /// the configuration files.
+        /// Bind an external scalar value to a variable so that it may
+        /// be referenced in the configuration files (via
+        /// std.extVar()).
         void add_var(const std::string& name, const std::string& value);
+
+        /// Bind external configuration code (in Jsonnet language) to
+        /// a variable so that its may be referenced the configuration
+        /// files (via std.extVar())
+        void add_code(const std::string& name, const std::string& value);
 
         /// Add an element to the configuration path in which
         /// configuration files may be found.
@@ -70,8 +76,8 @@ namespace WireCell {
 
     private:
         ConfigManager m_cfgmgr;
-        std::vector<std::string> m_plugins, m_apps, m_cfgfiles;
-        Persist::externalvars_t m_extvars;
+        std::vector<std::string> m_plugins, m_apps, m_cfgfiles, m_load_path;
+        Persist::externalvars_t m_extvars, m_extcode;
     };
 
 

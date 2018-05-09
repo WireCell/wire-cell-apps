@@ -44,6 +44,7 @@ int Main::cmdline(int argc, char* argv[])
 	("plugin,p", po::value< vector<string> >(),"specify a plugin as name[:lib]")
 //	("jsonpath,j", po::value< vector<string> >(),"specify a JSON path=value")
 	("ext-str,V", po::value< vector<string> >(),"specify a Jsonnet external variable=value")
+	("ext-code,C", po::value< vector<string> >(),"specify a Jsonnet external variable=code")
 	("path,P", po::value< vector<string> >(),"add to JSON/Jsonnet search path")
     ;    
 
@@ -73,6 +74,13 @@ int Main::cmdline(int argc, char* argv[])
         for (auto vev : opts["ext-str"].as< vector<string> >()) {
             auto vv = String::split(vev, "=");
             add_var(vv[0], vv[1]);
+        }
+    }
+    // And any external code
+    if (opts.count("ext-code")) {
+        for (auto vev : opts["ext-code"].as< vector<string> >()) {
+            auto vv = String::split(vev, "=");
+            add_code(vv[0], vv[1]);
         }
     }
     // fixme: these aren't yet supported.
@@ -116,10 +124,14 @@ void Main::add_var(const std::string& name, const std::string& value)
     m_extvars[name] = value;
 }
 
+void Main::add_code(const std::string& name, const std::string& value)
+{
+    m_extcode[name] = value;
+}
+
 void Main::add_path(const std::string& dirname)
 {
-    cerr << "Main::add_path not implemented\n";
-    // fixme: how to do this?  use setenv()?  
+    m_load_path.push_back(dirname);
 }
 
 
@@ -127,8 +139,8 @@ void Main::initialize()
 {
     for (auto filename : m_cfgfiles) {
         cerr << "WCT: loading config: " << filename << " ...\n";
-        Json::Value one;
-        one = Persist::load(filename, m_extvars); // throws
+        Persist::Parser p(m_load_path, m_extvars, m_extcode);
+        Json::Value one = p.load(filename); // throws
         m_cfgmgr.extend(one);
         cerr << "...done\n";
     }
