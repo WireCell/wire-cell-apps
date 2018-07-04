@@ -194,6 +194,10 @@ void Main::initialize()
         cerr << "WCT: constructing component: \"" << type << ":" << name << "\"\n";
 	auto iface = Factory::lookup<Interface>(type, name); // throws 
     }
+    for (auto c : m_apps) {
+        cerr << "WCT: constructing app: \"" << c << "\"\n";
+        Factory::lookup_tn<IApplication>(c);
+    }
     for (auto c : m_cfgmgr.all()) {
         if (c.isNull()) {
             continue;           // allow and ignore any totally empty configurations

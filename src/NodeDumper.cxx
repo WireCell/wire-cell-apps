@@ -30,14 +30,10 @@ void NodeDumper::configure(const Configuration& config)
 
 WireCell::Configuration NodeDumper::default_configuration() const
 {
-    // yo dawg, I heard you liked dumping so I made a dumper that dumps the dumper.
-    std::string json = R"({
-"filename":"/dev/stdout",
-"nodes":["WireSource","BoundCells","Diffuser","Digitizer","Drifter","Framer","PlaneDuctor","PlaneSliceMerger",
-         "Tiling","TrackDepos","WireGenerator","WireSummarizer","ChannelCellSelector","CellSliceSink"]
-})";
-
-    return Persist::loads(json);
+    Configuration cfg;
+    cfg["filename"] = "/dev/stdout";
+    cfg["nodes"] = Json::arrayValue;
+    return cfg;
 }
 
 

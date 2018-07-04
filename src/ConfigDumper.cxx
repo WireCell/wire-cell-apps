@@ -31,7 +31,7 @@ WireCell::Configuration ConfigDumper::default_configuration() const
     // yo dawg, I heard you liked dumping so I made a dumper that dumps the dumper.
     Configuration cfg;
     cfg["filename"] = "/dev/stdout";
-    cfg["components"][0] = "ConfigDumper";
+    cfg["components"] = Json::arrayValue;
     return cfg;
 }
 
@@ -39,7 +39,16 @@ void ConfigDumper::execute()
 {
     ConfigManager cm;
     int nfailed = 0;
-    for (auto c : m_cfg["components"]) {
+
+    std::vector<std::string> comps;
+    for (auto jone : m_cfg["components"]) {
+        comps.push_back(jone.asString());
+    }
+    if (comps.empty()) {
+        comps = Factory::known_types<IConfigurable>();
+    }
+
+    for (auto c : comps) {
 
 	string type, name;
 	tie(type,name) = String::parse_pair(convert<string>(c));
