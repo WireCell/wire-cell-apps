@@ -6,7 +6,8 @@
 #include "WireCellUtil/Persist.h"
 #include "WireCellIface/INode.h"
 
-WIRECELL_FACTORY(NodeDumper, WireCellApps::NodeDumper, WireCell::IApplication, WireCell::IConfigurable);
+WIRECELL_FACTORY(NodeDumper, WireCellApps::NodeDumper,
+                 WireCell::IApplication, WireCell::IConfigurable)
 
 
 using namespace std;

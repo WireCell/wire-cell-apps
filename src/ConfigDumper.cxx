@@ -4,7 +4,8 @@
 #include "WireCellUtil/NamedFactory.h"
 #include "WireCellUtil/ConfigManager.h"
 
-WIRECELL_FACTORY(ConfigDumper, WireCellApps::ConfigDumper, WireCell::IApplication, WireCell::IConfigurable);
+WIRECELL_FACTORY(ConfigDumper, WireCellApps::ConfigDumper,
+                 WireCell::IApplication, WireCell::IConfigurable)
 
 
 using namespace std;
