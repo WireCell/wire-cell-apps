@@ -33,13 +33,17 @@ int main()
     Assert(inst2);
     Assert(inst1 == inst2);
 
+    cerr << "Looking up WireParams factory \n";
     auto factory = Factory::lookup_factory<IWireParameters>("WireParams");
     Assert(factory);
 
+    cerr << "Looking up WireParams:\n";
     auto wp1 = Factory::lookup<IWireParameters>("WireParams");
     Assert(wp1);
+    cerr << "Looking up WireParams, again:\n";
     auto wp2 = Factory::lookup<IWireParameters>("WireParams");
     Assert(wp2);
+    cerr << "Looking up undefined WireParams\n";
     auto wp3 = Factory::lookup<IWireParameters>("WireParams","MyWireParameters");
     Assert(wp3);
 
