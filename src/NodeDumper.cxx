@@ -5,10 +5,14 @@
 #include "WireCellUtil/Configuration.h"
 #include "WireCellUtil/Persist.h"
 #include "WireCellIface/INode.h"
+#include "WireCellUtil/Logging.h"
 
 WIRECELL_FACTORY(NodeDumper, WireCellApps::NodeDumper,
                  WireCell::IApplication, WireCell::IConfigurable)
 
+
+using spdlog::info;
+using spdlog::error;
 
 using namespace std;
 using namespace WireCell;
@@ -47,14 +51,14 @@ void NodeDumper::execute()
     if (0 == nnodes) {
 	types = Factory::known_classes<INode>();
 	nnodes = types.size();
-	cerr << "Dumping all known node classes ("<<nnodes<<")\n";
+        info("Dumping all known node classes ({})", nnodes);
     }
     else {
-	cerr << "Dumping: ("<<nnodes<<")\n";
+	info("Dumping: ({})", nnodes);
 	for (auto type_cfg : m_cfg["nodes"]) {
 	    std::string type = convert<string>(type_cfg);
 	    types.push_back(type);
-	    cerr << "\t" << type << endl;
+            info("\t{}", type);
 	}
     }
 
@@ -66,7 +70,7 @@ void NodeDumper::execute()
 	    node = Factory::lookup<INode>(type);
 	}
 	catch (FactoryException& fe) {
-	    cerr << "NodeDumper: Failed lookup node: \"" << type << "\"\n";
+            error("NodeDumper: failed lookup node: \"{}\"", type);
 	    continue;
 	}
 

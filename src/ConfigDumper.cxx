@@ -3,10 +3,14 @@
 #include "WireCellUtil/Persist.h"
 #include "WireCellUtil/NamedFactory.h"
 #include "WireCellUtil/ConfigManager.h"
+#include "WireCellUtil/Logging.h"
 
 WIRECELL_FACTORY(ConfigDumper, WireCellApps::ConfigDumper,
                  WireCell::IApplication, WireCell::IConfigurable)
 
+
+using spdlog::info;
+using spdlog::error;
 
 using namespace std;
 using namespace WireCell;
@@ -60,7 +64,7 @@ void ConfigDumper::execute()
 	    cfg = cfgobj->default_configuration();
 	}
 	catch (FactoryException& fe) {
-	    cerr << "ConfigDumper: Failed lookup component: \"" << type << "\":\""<<name<<"\"\n";
+            error("failed lookup component: \"{}\":\"{}\"",  type, name);
 	    ++nfailed;
 	    continue;
 	}
