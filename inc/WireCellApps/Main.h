@@ -12,6 +12,8 @@
 #include "WireCellUtil/PluginManager.h"
 #include "WireCellUtil/Persist.h"
 
+#include "WireCellUtil/Logging.h"
+
 #include <string>
 #include <vector>
 
@@ -66,6 +68,13 @@ namespace WireCell {
         void add_plugin(const std::string& libname);
 
 
+        /// Add a log sink, reserved names 'stdout' and 'stderr' or a filename.
+        void add_logsink(const std::string& log, const std::string& level="");
+
+        /// Set a minimum level to emit a message for a given
+        /// log. (levels: critical, error, warn, info, debug, trace).
+        void set_loglevel(const std::string& log, const std::string& level="");
+
         /// Call once after all setup has been done and before
         /// running.
         void initialize();
@@ -78,6 +87,8 @@ namespace WireCell {
         ConfigManager m_cfgmgr;
         std::vector<std::string> m_plugins, m_apps, m_cfgfiles, m_load_path;
         Persist::externalvars_t m_extvars, m_extcode;
+        Log::logptr_t l;
+
     };
 
 

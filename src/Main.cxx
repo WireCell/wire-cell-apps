@@ -25,6 +25,7 @@ using namespace boost::algorithm;
 using namespace boost::property_tree;
 
 Main::Main()
+    : l(Log::logger("main"))
 {
 }
 
@@ -39,6 +40,8 @@ int Main::cmdline(int argc, char* argv[])
     po::options_description desc("Options");
     desc.add_options()
 	("help,h", "wire-cell [options] [arguments]")
+	("logsink,l", po::value< vector<string> >(),"log sink, filename or 'stdout' or 'stderr', if added ':level' then set a log level for the sink")
+	("loglevel,L", po::value< vector<string> >(),"set lowest log level for a log in form 'name:level' or just 'level' for all (level one of error,warn,info,debug,trace)")
 	("app,a", po::value< vector<string> >(),"application component to invoke")
 	("config,c", po::value< vector<string> >(),"provide a configuration file")
 	("plugin,p", po::value< vector<string> >(),"specify a plugin as name[:lib]")
@@ -53,7 +56,7 @@ int Main::cmdline(int argc, char* argv[])
     po::notify(opts);    
 
     if (opts.count("help")) {
-	cerr << desc << "\n";
+        std::cout << desc << "\n";
 	return 1;
     }
 
@@ -99,6 +102,33 @@ int Main::cmdline(int argc, char* argv[])
             add_app(app);
         }
     }
+    if (opts.count("logsink")) {
+        for (auto ls : opts["logsink"].as< vector<string> >()) {
+            auto ll = String::split(ls, ":");
+            if (ll.size() == 1) {
+                add_logsink(ll[0]);
+            }
+            if (ll.size() == 2) {
+                add_logsink(ll[0], ll[1]);
+            }
+        }
+    }
+
+    if (opts.count("loglevel")) {
+        for (auto ll : opts["loglevel"].as< vector<string> >()) {
+            auto lal = String::split(ll, ":");
+            if (lal.size() == 2) {
+                set_loglevel(lal[0], lal[1]);
+            }
+            else{
+                set_loglevel("", lal[0]);
+            }
+        }
+    }
+
+    // Maybe make this cmdline configurable.  For now, set all
+    // backends the same.
+    Log::set_pattern("[%H:%M:%S.%03e] %L [%^%=8n%$] %v");
 
     return 0;
 }
@@ -114,6 +144,22 @@ void Main::add_app(const std::string& tn)
     m_apps.push_back(tn);
 }
 
+void Main::add_logsink(const std::string& log, const std::string& level)
+{
+    if (log == "stdout") {
+        Log::add_stdout(true, level);
+        return;
+    }
+    if (log == "stderr") {
+        Log::add_stderr(true, level);
+        return;
+    }
+    Log::add_file(log, level);
+}
+void Main::set_loglevel(const std::string& log, const std::string& level)
+{
+    Log::set_level(level, log);
+}
 void Main::add_config(const std::string& filename)
 {
     m_cfgfiles.push_back(filename);
@@ -138,11 +184,11 @@ void Main::add_path(const std::string& dirname)
 void Main::initialize()
 {
     for (auto filename : m_cfgfiles) {
-        cerr << "WCT: loading config: " << filename << " ...\n";
+        l->info("loading config file {} ...", filename);
         Persist::Parser p(m_load_path, m_extvars, m_extcode);
         Json::Value one = p.load(filename); // throws
         m_cfgmgr.extend(one);
-        cerr << "...done\n";
+        l->info("...done");
     }
 
 
@@ -151,11 +197,11 @@ void Main::initialize()
     Configuration main_cfg = m_cfgmgr.pop(ind);
     if (! main_cfg.isNull()) {
         for (auto plugin : get< vector<string> >(main_cfg, "data.plugins")) {
-            cerr << "WCT: config requests plugin: \"" << plugin << "\"\n";
+            l->info("config requests plugin: \"{}\"", plugin);
             m_plugins.push_back(plugin);
         }
         for (auto app : get< vector<string> >(main_cfg, "data.apps")) {
-            cerr << "WCT: config requests app: \"" << app << "\"\n";
+            l->info("config requests app: \"{}\"", app);
             m_apps.push_back(app);
         }
     }
@@ -166,11 +212,10 @@ void Main::initialize()
     for (auto plugin : m_plugins) {
 	string pname, lname;
 	std::tie(pname, lname) = String::parse_pair(plugin);
-	cerr << "WCT: adding plugin: " << plugin;
+        l->info("adding plugin: \"{}\"", plugin);
 	if (lname.size()) {
-	    cerr << " from library " << lname;
+            l->info("\t from library \"{}\"", lname);
 	}
-	cerr << endl;
         pm.add(pname, lname);
     }
 
@@ -185,17 +230,16 @@ void Main::initialize()
             continue;           // allow and ignore any totally empty configurations
         }
         if (c["type"].isNull()) {
-            cerr << "All configuration must have a type attribute, got:\n"
-                 << c << endl;
+            l->error("all configuration must have a type attribute, got: {}", c);
             THROW(ValueError() << errmsg{"got configuration sequence element lacking a type"});
         }
 	string type = get<string>(c, "type");
 	string name = get<string>(c, "name");
-        cerr << "WCT: constructing component: \"" << type << ":" << name << "\"\n";
+        l->info("constructing component: \"{}\":\"{}\"", type, name);
 	auto iface = Factory::lookup<Interface>(type, name); // throws 
     }
     for (auto c : m_apps) {
-        cerr << "WCT: constructing app: \"" << c << "\"\n";
+        l->info("constructing app: \"{}\"",c);
         Factory::lookup_tn<IApplication>(c);
     }
     for (auto c : m_cfgmgr.all()) {
@@ -204,7 +248,7 @@ void Main::initialize()
         }
 	string type = get<string>(c, "type");
 	string name = get<string>(c, "name");
-        cerr << "WCT: configuring component: \"" << type << ":" << name << "\"\n";
+        l->info("configuring component: \"{}\":\"{}\"", type, name);
 	auto cfgobj = Factory::find_maybe<IConfigurable>(type, name); // doesn't throw. 
         if (!cfgobj) {
             continue;
@@ -228,10 +272,10 @@ void Main::operator()()
         auto a = Factory::find<IApplication>(type,name); // throws
         app_objs.push_back(a);
     }
-    //cerr << "WCT: executing " << m_apps.size() << " apps:\n";
+    l->debug("executing {} apps:", m_apps.size());
     for (size_t ind=0; ind < m_apps.size(); ++ind) {
 	auto aobj = app_objs[ind];
-	//cerr << "WCT: executing app: " << m_apps[ind] << endl;
+	l->debug("executing app: \"{}\"", m_apps[ind]);
 	aobj->execute();        // throws
     }
 }
