@@ -41,7 +41,7 @@ int Main::cmdline(int argc, char* argv[])
     desc.add_options()
 	("help,h", "wire-cell [options] [arguments]")
 	("logsink,l", po::value< vector<string> >(),"log sink, filename or 'stdout' or 'stderr', if added ':level' then set a log level for the sink")
-	("loglevel,L", po::value< vector<string> >(),"set lowest log level for a log in form 'name:level' or just 'level' for all (level one of error,warn,info,debug,trace)")
+	("loglevel,L", po::value< vector<string> >(),"set lowest log level for a log in form 'name:level' or just 'level' for all (level one of critical,error,warn,info,debug,trace)")
 	("app,a", po::value< vector<string> >(),"application component to invoke")
 	("config,c", po::value< vector<string> >(),"provide a configuration file")
 	("plugin,p", po::value< vector<string> >(),"specify a plugin as name[:lib]")
@@ -230,7 +230,7 @@ void Main::initialize()
             continue;           // allow and ignore any totally empty configurations
         }
         if (c["type"].isNull()) {
-            l->error("all configuration must have a type attribute, got: {}", c);
+            l->critical("all configuration must have a type attribute, got: {}", c);
             THROW(ValueError() << errmsg{"got configuration sequence element lacking a type"});
         }
 	string type = get<string>(c, "type");

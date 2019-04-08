@@ -12,7 +12,7 @@ WIRECELL_FACTORY(NodeDumper, WireCellApps::NodeDumper,
 
 
 using spdlog::info;
-using spdlog::error;
+using spdlog::warn;
 
 using namespace std;
 using namespace WireCell;
@@ -70,7 +70,7 @@ void NodeDumper::execute()
 	    node = Factory::lookup<INode>(type);
 	}
 	catch (FactoryException& fe) {
-            error("NodeDumper: failed lookup node: \"{}\"", type);
+            warn("NodeDumper: failed lookup node: \"{}\"", type);
 	    continue;
 	}
 

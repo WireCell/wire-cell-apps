@@ -10,7 +10,7 @@ WIRECELL_FACTORY(ConfigDumper, WireCellApps::ConfigDumper,
 
 
 using spdlog::info;
-using spdlog::error;
+using spdlog::warn;
 
 using namespace std;
 using namespace WireCell;
@@ -64,7 +64,7 @@ void ConfigDumper::execute()
 	    cfg = cfgobj->default_configuration();
 	}
 	catch (FactoryException& fe) {
-            error("failed lookup component: \"{}\":\"{}\"",  type, name);
+            warn("failed lookup component: \"{}\":\"{}\"",  type, name);
 	    ++nfailed;
 	    continue;
 	}
